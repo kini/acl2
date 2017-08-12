@@ -27,11 +27,15 @@
 (include-book "realp")
 (include-book "real-listp")
 
-; The following two depend individually on the first.
+; Of the following three books, the latter two each depend on the first.
 
 (include-book "inequalities")
 (include-book "natp-posp")
 (include-book "rationals")
+
+; The following book depends on the equalities book.
+
+(include-book "complex")
 
 
 
