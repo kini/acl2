@@ -21,7 +21,12 @@
 
 (in-theory (disable realpart-complex imagpart-complex))
 
-; ----------------------------------------------------------------
+; ================================================================
+
+(defthm conjugate-involutive
+  (equal (conjugate (conjugate x)) (fix x)))
+
+; ================================================================
 
 (local (in-theory (enable complex-definition)))
 
@@ -61,18 +66,32 @@
 
 (local (in-theory (disable complex-definition)))
 
+(skip-proofs
+ (local
+  (defthm conjugate-of-nonzero-is-nonzero
+    (implies (and (acl2-numberp x)
+                  (not (equal x 0)))
+             (not (equal (conjugate x) 0))))))
+
+(local
+ (defthm crock
+   (equal (/ x)
+          (if (and (acl2-numberp x)
+                   (not (zerop x)))
+              (/ (conjugate x)
+                 (* x (conjugate x)))
+            0))
+   :hints (("Goal" :in-theory (disable conjugate)))
+   :rule-classes nil))
+
 (defthm div-def-complex-1
   (equal (/ x)
          (/ (conjugate x)
             (+ (* (realpart x) (realpart x))
                (* (imagpart x) (imagpart x)))))
-  :hints (("Goal" :use ((:theorem (equal (/ x)
-                                         (if (and (acl2-numberp x)
-                                                  (not (zerop x)))
-                                             (/ (conjugate x)
-                                                (* x (conjugate x)))
-                                           0)))
-                        complex-norm-squared)))
+  :hints (("Goal" :use (crock
+                        complex-norm-squared
+                        )))
   :rule-classes nil)
 
 (defthm div-def-complex-2
@@ -88,7 +107,7 @@
            :in-theory (enable distribute-*-over-implicit-+-in-complex)))
   :rule-classes nil)
 
-; ----------------------------------------------------------------
+; ================================================================
 
 (defthm conjugate*
   (equal (conjugate x)
@@ -99,12 +118,19 @@
 
 (in-theory (disable conjugate))
 
-(defthm conjugate-involutive
-  (equal (conjugate (conjugate x)) x))
-
 (defthm conjugate-when-maybe-complex
   (or (complex/complex-rationalp (conjugate x))
       (equal (conjugate x) x))
+  :rule-classes :type-prescription)
+
+(defthm conjugate-when-not-complex-rational
+  (implies (not (complex-rationalp x))
+           #-:non-standard-analysis
+           (equal (conjugate x) x)
+           #+:non-standard-analysis
+           (or (and (complexp (conjugate x))
+                    (not (complex-rationalp (conjugate x))))
+               (equal (conjugate x) x)))
   :rule-classes :type-prescription)
 
 #+:non-standard-analysis
@@ -115,19 +141,7 @@
                (equal (conjugate x) x)))
   :rule-classes :type-prescription)
 
-(defthm conjugate-when-not-complex-rational
-  #-:non-standard-analysis
-  (implies (not (complex-rationalp x))
-           (equal (conjugate x) x))
-  #+:non-standard-analysis
-  (implies (or (not (complexp x))
-               (not (complex-rationalp x)))
-           (or (and (complexp (conjugate x))
-                    (not (complex-rationalp (conjugate x))))
-               (equal (conjugate x) x)))
-  :rule-classes :type-prescription)
-
-; ----------------------------------------------------------------
+; ================================================================
 
 (in-theory (disable complex-equal))
 

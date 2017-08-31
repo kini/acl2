@@ -3871,6 +3871,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; This axiom was weakened to accommodate the reals.
 
+;; KK: Why is this :RULE-CLASSES NIL?
 (defaxiom complex-implies1
   (and (real/rationalp (realpart x))
        (real/rationalp (imagpart x)))
@@ -24101,30 +24102,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (realfix x))
   :hints (("Goal" :use ((:instance complex-definition (y 0))))))
 
-(defthm add-def-complex
-  (equal (+ x y)
-         (complex (+ (realpart x) (realpart y))
-                  (+ (imagpart x) (imagpart y))))
-  :hints (("Goal" :use ((:instance complex-definition
-                                   (x (+ (realpart x) (realpart y)))
-                                   (y (+ (imagpart x) (imagpart y))))
-                        (:instance complex-definition
-                                   (x (realpart x))
-                                   (y (imagpart x)))
-                        (:instance complex-definition
-                                   (x (realpart y))
-                                   (y (imagpart y))))))
-  :rule-classes nil)
+;; (defthm add-def-complex
+;;   (equal (+ x y)
+;;          (complex (+ (realpart x) (realpart y))
+;;                   (+ (imagpart x) (imagpart y))))
+;;   :hints (("Goal" :use ((:instance complex-definition
+;;                                    (x (+ (realpart x) (realpart y)))
+;;                                    (y (+ (imagpart x) (imagpart y))))
+;;                         (:instance complex-definition
+;;                                    (x (realpart x))
+;;                                    (y (imagpart x)))
+;;                         (:instance complex-definition
+;;                                    (x (realpart y))
+;;                                    (y (imagpart y))))))
+;;   :rule-classes nil)
 
-(defthm realpart-+
-  (equal (realpart (+ x y))
-         (+ (realpart x) (realpart y)))
-  :hints (("Goal" :use add-def-complex)))
+;; (defthm realpart-+
+;;   (equal (realpart (+ x y))
+;;          (+ (realpart x) (realpart y)))
+;;   :hints (("Goal" :use add-def-complex)))
 
-(defthm imagpart-+
-  (equal (imagpart (+ x y))
-         (+ (imagpart x) (imagpart y)))
-  :hints (("Goal" :use add-def-complex)))
+;; (defthm imagpart-+
+;;   (equal (imagpart (+ x y))
+;;          (+ (imagpart x) (imagpart y)))
+;;   :hints (("Goal" :use add-def-complex)))
 
 (defaxiom completion-of-coerce
   (equal (coerce x y)
