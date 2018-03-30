@@ -27,7 +27,8 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; Contributing author: David Rager <ragerdl@defthm.com>
+; Contributing authors: David Rager <ragerdl@defthm.com>
+;                       Keshav Kini <keshav.kini@gmail.com>
 
 
 
@@ -52,26 +53,148 @@
 #!ACL2
 (set-inhibit-output-lst '(proof-tree))
 
+;; (f-put-global ':suppress-preload-xdoc t state)
+
+;; (ld "std/std-customization.lsp" :dir :system)
+
+;; (assign verbose-theory-warning nil)
+;; (set-inhibit-warnings "non-rec")
+
+;; (set-ld-pre-eval-print nil state)
+
+;; (set-deferred-ttag-notes t state)
+
+;; #!ACL2
+;; (defmacro pgv ()
+;;   "Taken from :doc print-gv"
+;;   '(print-gv :evisc-tuple (evisc-tuple 10 10 nil nil)))
+
+;; #!ACL2
+;; (defmacro plev-me ()
+;;   `(plev :level 10))
+
+;; #!ACL2
+;; (defun monitor-many-fn (rules action state)
+;;   (declare (xargs :stobjs (state) :mode :program))
+;;   (cond
+;;    ((null rules) (value nil))
+;;    ((atom rules) (monitor-many-fn (list rules) action state))
+;;    (t (er-let* ((val (monitor (car rules) action)))
+;;         (monitor-many-fn (cdr rules) action state)))))
+
+;; #!ACL2
+;; (defmacro monitor-many (rules &key (action 't))
+;;   (let ((action (case action
+;;                   (:why '''(:eval :go t))
+;;                   (:why-explain '''(:eval :ok-if (brr@ :wonp) (explain)))
+;;                   (otherwise action))))
+;;     `(let* ((real-rules (expand-ruleset ,rules (w state))))
+;;        (er-progn
+;;         (brr t)
+;;         (monitor-many-fn real-rules ,action state)))))
+
+;; #!ACL2
+;; (defmacro where (rule)
+;;   ;; Like `why' but stops and lets you inspect the first application
+;;   ;; attempt
+;;   `(er-progn
+;;     (brr t)
+;;     (monitor ',rule ''(:eval))))
+
+;; #!ACL2
+;; (progn
+;;   (defn tree-count (x)
+;;     (if (atom x)
+;;         1
+;;       (+ 1
+;;          (tree-count (car x))
+;;          (tree-count (cdr x)))))
+;;   (memoize 'tree-count))
+
+;; #!ACL2
+;; (defmacro ldt (file form &rest rest)
+;;   ;; I can never remember the keyword :ld-pre-eval-filter
+;;   `(ld ,file :ld-pre-eval-filter ',form ,@rest))
+
+;; (set-inhibit-warnings "skip-proofs" "double-rewrite" "ttag" "non-rec")
+
+;; ;; (include-book "centaur/misc/memory-mgmt" :dir :system)
+;; (include-book "tools/plev" :dir :system)
+;; (include-book "misc/find-lemmas" :dir :system)
+
+;; (include-book "kestrel/utilities/ubi" :dir :system)
+;; (plev-me)
+
+;; (reset-prehistory)
 
 #!ACL2
 (with-output
   :off (summary event)
   (progn
-    (defmacro d (name)
+    (defun unquote* (x)
+      ;; Remove quotes from x until it is no longer quotep.  This is handy for
+      ;; utilities that could be called either normally or as keyword commands;
+      ;; by unquote*-ing the argument, the tool can accommodate :foo bar, (foo
+      ;; bar), :foo 'bar, and (foo 'bar) equally well.
+      (if (quotep x)
+          (unquote* (unquote x))
+        x))
+
+    (defmacro d (arg)
       ;; A handy macro that lets you write :d fn to disassemble a function.  I
       ;; mostly have this because my fingers always type ":diassemble$" instead of
       ;; ":disassemble$"
-      (cond ((symbolp name)
-             `(disassemble$ ',name :recompile nil))
-            ((and (quotep name)
-                  (symbolp (unquote name)))
-             `(disassemble$ ',(unquote name) :recompile nil))
-            ((and (quotep name)
-                  (quotep (unquote name))
-                  (symbolp (unquote (unquote name))))
-             `(disassemble$ ',(unquote (unquote name)) :recompile nil))
-            (t
-             (er hard? 'd "Not a symbol or quoted symbol: ~x0~%" name))))
+      (let ((name (unquote* arg)))
+        (if (symbolp name)
+            `(disassemble$ ',name :recompile nil)
+          (er hard? 'd "Not a symbol or quoted symbol: ~x0~%" arg))))
+
+; :why 'x = (why ''x)
+; :why '(:k x) = (why ''(:k x))
+; :why x = (why 'x)
+; :why (:k x) = (why '(:k x))
+; (why x)
+; (why (:k x))
+
+;
+
+    (defun unquote*-members (x)
+      (and (consp x)
+           (cons-with-hint (unquote* (car x))
+                           (unquote*-members (cdr x))
+                           x)))
+
+    (defun monitor-many-fn1 (rules action state)
+      (declare (xargs :stobjs (state) :mode :program))
+      ((let* ((wrld (w state)))
+         (if (null rules)
+             (value nil)
+           (er-let* ((val (monitor (car rules) action)))
+             (monitor-many-fn1 (cdr rules) action state))))))
+
+    (defun monitor-many-fn (rules action state)
+      (declare (xargs :stobjs (state) :mode :program))
+      (let ((action (case action
+                      (:why '''(:eval :go t))
+                      (:why-explain '''(:eval :ok-if (brr@ :wonp)
+                                              (explain)))
+                      (otherwise action)))
+            (rules (unquote*)))
+        (er-progn
+         (with-output! :off :all
+           (monitor-many-fn1 rules action state))
+         (brr t))))
+
+    (defmacro monitor-many (rules &key (action 't))
+      `(monitor-many-fn ,rules ,action state)
+      (let ()
+        `(er-progn
+          (with-output! :off :all
+            (monitor-many-fn ,rules ,action state))
+          (brr t))))
+
+    (defmacro why (rule &rest rules)
+      (monitor-many))
 
     (defmacro why (rule)
       ;; A handy macro that lets you figure out why a rule isn't firing.
@@ -79,7 +202,11 @@
       ;; syntax.
       `(er-progn
         (brr t)
-        (monitor ',rule ''(:eval :go t))))
+        (monitor ',(or (and (consp rule)
+                            (equal (car rule) 'quote)
+                            (cadr rule))
+                       rule)
+                 ''(:eval :go t))))
 
     (defun explain-fn (state)
       (declare (xargs :stobjs (state)
