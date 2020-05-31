@@ -84,6 +84,7 @@ fi
 
 
 echo "Determining whether an ipasir shared library is installed" 1>&2
+IPASIR_SHARED_LIBRARY=${IPASIR_SHARED_LIBRARY:-@libipasirglucose4@/lib/libipasirglucose4.so}
 if [[ $IPASIR_SHARED_LIBRARY != '' ]];
 then
     if [[ -e $IPASIR_SHARED_LIBRARY ]];

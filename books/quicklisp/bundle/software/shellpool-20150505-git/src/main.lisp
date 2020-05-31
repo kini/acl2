@@ -106,26 +106,8 @@
 ; Glue
 
 
-#-sbcl
 (defun find-bash ()
-  #+windows "bash.exe"
-  #-windows "bash")
-
-#+sbcl
-;; SBCL (on Linux, at least) won't successfully run "bash" all by itself.  So,
-;; on SBCL, try to find a likely bash.  BOZO this probably isn't great.  It
-;; would be better to search the user's PATH for which bash to use.
-(let ((found-bash))
-  (defun find-bash ()
-    (or found-bash
-        (let ((paths-to-try '("/bin/bash"
-                              "/usr/bin/bash"
-                              "/usr/local/bin/bash")))
-          (loop for path in paths-to-try do
-                (when (cl-fad::file-exists-p path)
-                  (setq found-bash path)
-                  (return-from find-bash path)))
-          (error "Bash not found among ~s" paths-to-try)))))
+  "@bash@/bin/bash")
 
 #+(or allegro lispworks)
 (defstruct bashprocess
